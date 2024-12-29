@@ -18,11 +18,11 @@ export const config = {
     url: getEnvVar('SUPABASE_URL'),
     anonKey: getEnvVar('SUPABASE_ANON_KEY'),
   },
-  openai: {
-    apiKey: getEnvVar('OPENAI_API_KEY'),
-  },
   anthropic: {
     apiKey: getEnvVar('ANTHROPIC_API_KEY'),
+  },
+  paystack: {
+    secretKey: getEnvVar('PAYSTACK_SECRET_KEY'),
   },
 };
 
@@ -32,10 +32,10 @@ export interface Config {
     url: string;
     anonKey: string;
   };
-  openai: {
-    apiKey: string;
-  };
   anthropic: {
     apiKey: string;
+  };
+  paystack: {
+    secretKey: string;
   };
 }
