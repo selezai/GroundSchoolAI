@@ -23,7 +23,7 @@ An AI-powered aviation study platform designed to help pilots prepare for their 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/GroundSchoolAI.git
+git clone https://github.com/selezai/GroundSchoolAI.git
 cd GroundSchoolAI
 ```
 
@@ -82,5 +82,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-Your Name - [@yourusername](https://twitter.com/yourusername)
-Project Link: [https://github.com/yourusername/GroundSchoolAI](https://github.com/yourusername/GroundSchoolAI)
+Selezai - [@selezai](https://github.com/selezai)
+Project Link: [https://github.com/selezai/GroundSchoolAI](https://github.com/selezai/GroundSchoolAI)
