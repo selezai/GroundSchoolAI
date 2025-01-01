@@ -33,7 +33,7 @@ jobs:
       - name: Run tests and type check
         run: npm test
 
-      - name: Build web version
-        run: npx expo export:web
+      - name: Build app
+        run: npx expo export
         env:
           NODE_ENV: production

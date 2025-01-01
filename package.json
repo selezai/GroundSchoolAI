@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "tsc --noEmit",
-    "build": "npx expo export:web"
+    "build": "npx expo export"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.1",
