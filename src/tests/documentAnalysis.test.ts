@@ -16,7 +16,7 @@ const cleanupTestData = async (userId?: string) => {
   try {
     // Find and delete existing test user if any
     const { data: users } = await testSupabase.auth.admin.listUsers();
-    const existingUser = users?.users?.find((user) => user.email === TEST_USER_EMAIL);
+    const existingUser = users?.users?.find((user: { email: string }) => user.email === TEST_USER_EMAIL);
     
     if (existingUser) {
       console.log('Found existing test user, cleaning up...');
@@ -49,7 +49,7 @@ const cleanupTestData = async (userId?: string) => {
     }
     
     // If we have a specific userId, clean up that user too
-    if (userId && userId !== existingUser?.id) {
+    if (userId) {
       console.log('Cleaning up specific test user...');
       
       // Delete test documents
@@ -73,11 +73,9 @@ const cleanupTestData = async (userId?: string) => {
       }
 
       // Delete test user
-      if (userId) {
-        const { error: userError } = await testSupabase.auth.admin.deleteUser(userId);
-        if (userError) {
-          console.error('Error deleting test user:', userError);
-        }
+      const { error: userError } = await testSupabase.auth.admin.deleteUser(userId);
+      if (userError) {
+        console.error('Error deleting test user:', userError);
       }
     }
   } catch (error) {
@@ -168,7 +166,7 @@ const setupTestEnvironment = async (userId: string) => {
     console.log('Signed in as test user');
 
     // Set up test environment
-    await setupTestEnvironment(userId);
+    await setupTestEnvironment(userId!);
 
     console.log('\n=== Starting Document Analysis Test ===\n');
 
