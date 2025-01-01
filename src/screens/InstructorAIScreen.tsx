@@ -165,6 +165,9 @@ const InstructorAIScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.md,
+    paddingBottom: theme.spacing.xl,
   },
   chatContainer: {
     flex: 1,
@@ -177,16 +180,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     marginBottom: theme.spacing.md,
     maxWidth: '85%',
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
+    ...Platform.select({
+      ios: theme.shadows.md,
+      android: {
+        elevation: 5,
       },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-    } : {
-      elevation: 5,
     }),
   },
   aiMessage: {
@@ -203,16 +201,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.lg,
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
+    ...Platform.select({
+      ios: theme.shadows.md,
+      android: {
+        elevation: 5,
       },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-    } : {
-      elevation: 5,
     }),
   },
   aiAvatar: {
@@ -226,11 +219,12 @@ const styles = StyleSheet.create({
   },
   messageTitle: {
     fontSize: theme.typography.h4.fontSize,
-    fontWeight: 'bold',
+    fontWeight: theme.typography.h4.fontWeight,
     marginBottom: theme.spacing.xs,
   },
   messageText: {
     fontSize: theme.typography.body.fontSize,
+    fontWeight: theme.typography.body.fontWeight,
     lineHeight: 20,
   },
   inputContainer: {
@@ -258,16 +252,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xl,
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
-    ...(Platform.OS === 'ios' ? {
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
+    ...Platform.select({
+      ios: theme.shadows.md,
+      android: {
+        elevation: 5,
       },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-    } : {
-      elevation: 5,
     }),
   },
   welcomeIcon: {
@@ -275,11 +264,14 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     color: theme.colors.primary,
+    fontSize: theme.typography.h3.fontSize,
+    fontWeight: theme.typography.h3.fontWeight,
     marginBottom: theme.spacing.md,
     textAlign: 'center',
   },
   welcomeText: {
     fontSize: theme.typography.body.fontSize,
+    fontWeight: theme.typography.body.fontWeight,
     color: theme.colors.text,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
@@ -290,6 +282,7 @@ const styles = StyleSheet.create({
   },
   topicItem: {
     fontSize: theme.typography.body.fontSize,
+    fontWeight: theme.typography.body.fontWeight,
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },

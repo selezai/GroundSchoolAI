@@ -1,262 +1,286 @@
-import { supabase } from '../lib/supabase';
-import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
-import * as ImageManipulator from 'expo-image-manipulator';
+import { supabase } from './supabase';
+import { FileObject } from '@supabase/storage-js';
+import { Database } from '../types/supabase';
+import { documentAnalysisService } from './documentAnalysis';
+
+// Import FileSystem based on environment
+let FileSystem: any;
+if (process.env.NODE_ENV === 'test') {
+  FileSystem = require('../tests/mocks/expo-file-system');
+} else {
+  FileSystem = require('expo-file-system');
+}
 
 export interface Document {
   id: string;
-  user_id: string;
   title: string;
+  category: string;
   file_path: string;
   file_type: string;
   file_size: number;
-  category: string;
-  status: 'processing' | 'ready' | 'error';
+  url?: string;
+  user_id: string;
   created_at: string;
   updated_at: string;
-  version: number;
+  size?: number;
+  type?: string;
+  status: 'pending' | 'analyzing' | 'analyzed' | 'failed';
 }
 
-const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
-const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+interface FileInfo {
+  exists: boolean;
+  uri: string;
+  size?: number;
+  modificationTime?: number;
+  isDirectory?: boolean;
+}
 
-class DocumentService {
-  private generateFileName(originalName: string): string {
-    const timestamp = new Date().getTime();
-    const randomString = Math.random().toString(36).substring(7);
-    const extension = originalName.split('.').pop();
-    return `${timestamp}-${randomString}.${extension}`;
+export class DocumentService {
+  private readonly documentsDir: string;
+  private supabase: any;
+  private isTestEnvironment: boolean;
+
+  constructor(supabase: any) {
+    this.supabase = supabase;
+    this.documentsDir = `${FileSystem.documentDirectory}documents/`;
+    this.isTestEnvironment = process.env.NODE_ENV === 'test';
+    this.initializeDirectory();
   }
 
-  private async compressImage(uri: string): Promise<string> {
-    try {
-      const result = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      return result.uri;
-    } catch (error) {
-      console.error('Error compressing image:', error);
-      throw error;
+  private async initializeDirectory() {
+    const { exists } = await FileSystem.getInfoAsync(this.documentsDir);
+    if (!exists) {
+      await FileSystem.makeDirectoryAsync(this.documentsDir, { intermediates: true });
     }
   }
 
   async uploadDocument(
-    fileUri: string,
-    fileName: string,
-    fileType: string,
-    category: string,
-    userId: string
+    file: { uri: string; name: string; type: string; data?: Uint8Array; size?: number },
+    metadata: { title: string; category: string }
   ): Promise<Document> {
+    let document: Document | null = null;
+    let filePath: string | null = null;
+
     try {
-      // Check file type
-      if (!ALLOWED_FILE_TYPES.includes(fileType)) {
-        throw new Error('Invalid file type. Only PDF and images are allowed.');
+      // Check if user is authenticated
+      const { data: { session } } = await this.supabase.auth.getSession();
+      if (!session && !this.isTestEnvironment) {
+        throw new Error('User must be authenticated to upload documents');
       }
 
-      // Check file size
-      const fileInfo = await FileSystem.getInfoAsync(fileUri);
-      if (fileInfo.size > MAX_FILE_SIZE) {
-        throw new Error('File size exceeds 500MB limit.');
+      const userId = session?.user?.id;
+      if (!userId) {
+        throw new Error('User ID is required');
       }
 
-      // Compress image if needed
-      let finalUri = fileUri;
-      if (fileType.startsWith('image/')) {
-        finalUri = await this.compressImage(fileUri);
+      // Calculate file size
+      let fileSize = file.size;
+      if (!fileSize && file.data) {
+        fileSize = file.data.byteLength;
+      }
+      if (!fileSize) {
+        throw new Error('File size is required');
       }
 
-      // Generate unique file name and path
-      const uniqueFileName = this.generateFileName(fileName);
-      const filePath = `${userId}/${uniqueFileName}`; // Changed to match our storage policy
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, {
-          uri: finalUri,
-          type: fileType,
-          name: uniqueFileName,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Create document record in database
-      const { data, error } = await supabase
+      // Create document record with initial status
+      const { data, error } = await this.supabase
         .from('documents')
         .insert([
           {
+            title: metadata.title,
+            category: metadata.category,
             user_id: userId,
-            title: fileName,
-            file_path: filePath,
-            file_type: fileType,
-            file_size: fileInfo.size,
-            category,
-            status: 'ready', // Changed from 'processing' since we're not doing processing yet
-            version: 1,
+            status: 'pending',
+            file_type: file.type,
+            file_size: fileSize,
           },
         ])
         .select()
         .single();
 
       if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      throw error;
-    }
-  }
+      document = data as Document;
 
-  async processDocument(documentId: string): Promise<void> {
-    try {
-      // Update status to processing
-      await supabase
+      if (!document || !document.id) {
+        throw new Error('Failed to create document record');
+      }
+
+      // Upload file to storage
+      filePath = `${userId}/${document.id}/${metadata.title}`;
+      const { error: uploadError } = await this.supabase.storage
         .from('documents')
-        .update({ status: 'processing' })
-        .eq('id', documentId);
+        .upload(filePath, file.data || file);
 
-      // TODO: Implement document processing logic
-      // 1. Extract text from PDF/Image
-      // 2. Analyze content for SACAA compliance
-      // 3. Generate AI questions
-      // 4. Update document status to ready
+      if (uploadError) {
+        throw uploadError;
+      }
 
-      // For now, just mark as ready
-      await supabase
+      // Update document with file path and start analysis
+      const { data: updatedDoc, error: updateError } = await this.supabase
         .from('documents')
-        .update({ status: 'ready' })
-        .eq('id', documentId);
-    } catch (error) {
-      console.error('Error processing document:', error);
-      await supabase
-        .from('documents')
-        .update({ status: 'error' })
-        .eq('id', documentId);
-      throw error;
-    }
-  }
-
-  async getUserDocuments(userId: string): Promise<Document[]> {
-    try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching user documents:', error);
-      throw error;
-    }
-  }
-
-  async getDocument(documentId: string): Promise<Document> {
-    try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('id', documentId)
+        .update({
+          file_path: filePath,
+          status: 'analyzing',
+        })
+        .eq('id', document.id)
+        .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (updateError) {
+        throw updateError;
+      }
+
+      if (!updatedDoc) {
+        throw new Error('Failed to update document');
+      }
+
+      const docWithPath = { ...updatedDoc, file_path: filePath } as Document;
+
+      // Start document analysis
+      await documentAnalysisService.analyzeDocument(docWithPath);
+      
+      // Update document status to analyzed
+      const { error: finalError } = await this.supabase
+        .from('documents')
+        .update({ status: 'analyzed' })
+        .eq('id', document.id);
+
+      if (finalError) {
+        throw finalError;
+      }
+
+      return docWithPath;
     } catch (error) {
-      console.error('Error fetching document:', error);
+      console.error('Error analyzing document:', error);
+      // Update document status to failed if we have a document ID
+      if (document?.id) {
+        await this.supabase
+          .from('documents')
+          .update({ status: 'failed' })
+          .eq('id', document.id);
+      }
       throw error;
     }
   }
 
-  async downloadDocument(filePath: string): Promise<string> {
+  async getSignedUrl(file_path: string): Promise<string> {
     try {
-      // First check if the file exists locally
-      const fileName = filePath.split('/').pop()!;
-      const localUri = `${FileSystem.documentDirectory}${fileName}`;
-      
-      const localFileInfo = await FileSystem.getInfoAsync(localUri);
-      if (localFileInfo.exists) {
+      const { data, error } = await this.supabase.storage
+        .from('documents')
+        .createSignedUrl(file_path, 3600);
+
+      if (error) throw error;
+      if (!data?.signedUrl) throw new Error('Failed to get signed URL');
+
+      return data.signedUrl;
+    } catch (error) {
+      console.error('Error getting signed URL:', error);
+      throw error;
+    }
+  }
+
+  async downloadDocument(document: Document): Promise<string> {
+    try {
+      // Check if user is authenticated
+      const { data: { session } } = await this.supabase.auth.getSession();
+      if (!session && !this.isTestEnvironment) {
+        throw new Error('User must be authenticated to download documents');
+      }
+
+      const localUri = `${this.documentsDir}${document.title}`;
+      const fileInfo = await FileSystem.getInfoAsync(localUri);
+
+      if (fileInfo.exists) {
         return localUri;
       }
 
-      // If not, download from Supabase
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .download(filePath);
+      const signedUrl = await this.getSignedUrl(document.file_path);
 
-      if (error) throw error;
+      // Download file
+      const { uri: downloadedUri } = await FileSystem.downloadAsync(
+        signedUrl,
+        localUri
+      );
 
-      // Convert blob to base64
-      const fr = new FileReader();
-      const blob = new Blob([data], { type: 'application/octet-stream' });
-      
-      return new Promise((resolve, reject) => {
-        fr.onerror = () => {
-          fr.abort();
-          reject(new Error('Failed to convert Blob to Base64'));
-        };
-        
-        fr.onload = () => {
-          // Write the file locally
-          FileSystem.writeAsStringAsync(localUri, fr.result as string, {
-            encoding: FileSystem.EncodingType.Base64,
-          })
-            .then(() => resolve(localUri))
-            .catch(reject);
-        };
-        
-        fr.readAsDataURL(blob);
-      });
+      return downloadedUri;
     } catch (error) {
       console.error('Error downloading document:', error);
       throw error;
     }
   }
 
-  async deleteDocument(documentId: string): Promise<void> {
+  async getUserDocuments(userId: string): Promise<Document[]> {
     try {
-      const document = await this.getDocument(documentId);
+      const { data: { session } } = await this.supabase.auth.getSession();
+      if (!session && !this.isTestEnvironment) {
+        throw new Error('User must be authenticated to access documents');
+      }
+
+      const { data, error } = await this.supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching user documents:', error);
+      throw error;
+    }
+  }
+
+  async getAnalyzedDocuments(): Promise<Document[]> {
+    try {
+      const { data: documents, error } = await this.supabase
+        .from('documents')
+        .select('*')
+        .eq('status', 'analyzed')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return documents || [];
+    } catch (error) {
+      console.error('Error getting analyzed documents:', error);
+      throw error;
+    }
+  }
+
+  async deleteDocument(document: Document): Promise<void> {
+    try {
+      const { data: { session } } = await this.supabase.auth.getSession();
+      if (!session && !this.isTestEnvironment) {
+        throw new Error('User must be authenticated to delete documents');
+      }
 
       // Delete from storage
-      const { error: storageError } = await supabase.storage
+      const { error: storageError } = await this.supabase.storage
         .from('documents')
         .remove([document.file_path]);
 
       if (storageError) throw storageError;
 
       // Delete from database
-      const { error: dbError } = await supabase
+      const { error: dbError } = await this.supabase
         .from('documents')
         .delete()
-        .eq('id', documentId);
+        .eq('id', document.id)
+        .eq('user_id', session.user.id); // Extra safety check
 
       if (dbError) throw dbError;
+
+      // Delete local file if it exists
+      const localUri = `${this.documentsDir}${document.title}`;
+      const fileInfo = await FileSystem.getInfoAsync(localUri);
+      if (fileInfo.exists) {
+        await FileSystem.deleteAsync(localUri);
+      }
     } catch (error) {
       console.error('Error deleting document:', error);
       throw error;
     }
   }
-
-  async updateDocument(
-    documentId: string,
-    updates: Partial<Document>
-  ): Promise<Document> {
-    try {
-      const { data, error } = await supabase
-        .from('documents')
-        .update(updates)
-        .eq('id', documentId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error updating document:', error);
-      throw error;
-    }
-  }
 }
 
-export const documentService = new DocumentService();
+export const documentService = new DocumentService(supabase);

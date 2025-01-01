@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, Button, Card, Icon } from '@rneui/themed';
-import { DocumentUpload } from '../components/DocumentUpload';
-import { DocumentViewer } from '../components/DocumentViewer';
-import { Document, documentService } from '../services/document';
-import { useAuth } from '../contexts/AuthContext';
+import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Text, Button, Card, Icon, Badge } from '@rneui/themed';
 import { theme } from '../config/theme';
+import DocumentUpload from '../components/DocumentUpload';
+import DocumentViewer from '../components/DocumentViewer';
+import { Document, documentService } from '../services/document';
+import { documentAnalysisService, AnalysisResult } from '../services/documentAnalysis';
+import { useAuth } from '../contexts/AuthContext';
 
 const StudyMaterialsScreen = () => {
   const { user } = useAuth();
   const [showUpload, setShowUpload] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [analyses, setAnalyses] = useState<Record<string, AnalysisResult>>({});
   const [loading, setLoading] = useState(true);
 
   const loadDocuments = async () => {
@@ -20,6 +22,16 @@ const StudyMaterialsScreen = () => {
       if (!user) return;
       const docs = await documentService.getUserDocuments(user.id);
       setDocuments(docs);
+
+      // Load analyses for all documents
+      const analysesMap: Record<string, AnalysisResult> = {};
+      for (const doc of docs) {
+        const analysis = await documentAnalysisService.getDocumentAnalysis(doc.id);
+        if (analysis) {
+          analysesMap[doc.id] = analysis;
+        }
+      }
+      setAnalyses(analysesMap);
     } catch (error) {
       console.error('Error loading documents:', error);
       Alert.alert('Error', 'Failed to load documents');
@@ -39,16 +51,74 @@ const StudyMaterialsScreen = () => {
 
   const handleDeleteDocument = async (doc: Document) => {
     try {
-      await documentService.deleteDocument(doc.id);
+      await documentService.deleteDocument(doc);
       Alert.alert('Success', 'Document deleted successfully');
       loadDocuments();
-      if (selectedDocument?.id === doc.id) {
-        setSelectedDocument(null);
-      }
     } catch (error) {
       console.error('Error deleting document:', error);
       Alert.alert('Error', 'Failed to delete document');
     }
+  };
+
+  const handleDocumentSelect = (doc: Document) => {
+    setSelectedDocument(doc);
+  };
+
+  const renderDocumentCard = (document: Document) => {
+    const analysis = analyses[document.id];
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'analyzed': return 'success';
+        case 'analyzing': return 'warning';
+        case 'failed': return 'error';
+        default: return 'primary';
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        key={document.id}
+        onPress={() => handleDocumentSelect(document)}
+      >
+        <Card containerStyle={styles.documentCard}>
+          <View style={styles.documentHeader}>
+            <Text style={styles.documentTitle}>{document.title}</Text>
+            <Badge
+              value={document.status}
+              status={getStatusColor(document.status || 'pending')}
+              containerStyle={styles.badge}
+            />
+          </View>
+          
+          {analysis && (
+            <View style={styles.analysisInfo}>
+              <Text>Topics: {analysis.topics.length}</Text>
+              <Text>Questions: {analysis.practice_questions.length}</Text>
+            </View>
+          )}
+          
+          <Text style={styles.documentMeta}>
+            Category: {document.category}
+          </Text>
+          <View style={styles.cardButtons}>
+            <Button
+              title="View"
+              type={selectedDocument?.id === document.id ? 'solid' : 'outline'}
+              onPress={() => handleDocumentSelect(document)}
+              containerStyle={styles.cardButton}
+            />
+            <Button
+              title="Delete"
+              type="outline"
+              buttonStyle={{ borderColor: theme.colors.error }}
+              titleStyle={{ color: theme.colors.error }}
+              onPress={() => handleDeleteDocument(document)}
+              containerStyle={styles.cardButton}
+            />
+          </View>
+        </Card>
+      </TouchableOpacity>
+    );
   };
 
   if (!user) {
@@ -60,8 +130,7 @@ const StudyMaterialsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header with upload button */}
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text h4>Study Materials</Text>
         <Button
@@ -79,66 +148,34 @@ const StudyMaterialsScreen = () => {
         />
       </View>
 
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : documents.length === 0 ? (
+        <Card>
+          <Card.Title>No Documents</Card.Title>
+          <Text>Upload your first document to get started</Text>
+        </Card>
+      ) : (
+        documents.map(renderDocumentCard)
+      )}
+
       {showUpload ? (
         <DocumentUpload
           onUploadComplete={handleUploadComplete}
           onClose={() => setShowUpload(false)}
         />
-      ) : (
-        <View style={styles.content}>
-          {/* Document List */}
-          <ScrollView style={styles.documentList}>
-            {loading ? (
-              <Text style={styles.messageText}>Loading documents...</Text>
-            ) : documents.length === 0 ? (
-              <Text style={styles.messageText}>No documents found</Text>
-            ) : (
-              documents.map((doc) => (
-                <Card key={doc.id} containerStyle={styles.documentCard}>
-                  <Card.Title>{doc.title}</Card.Title>
-                  <Card.Divider />
-                  <Text style={styles.documentInfo}>
-                    Category: {doc.category}
-                  </Text>
-                  <Text style={styles.documentInfo}>
-                    Size: {(doc.file_size / 1024 / 1024).toFixed(2)} MB
-                  </Text>
-                  <View style={styles.cardButtons}>
-                    <Button
-                      title="View"
-                      type={selectedDocument?.id === doc.id ? 'solid' : 'outline'}
-                      onPress={() => setSelectedDocument(doc)}
-                      containerStyle={styles.cardButton}
-                    />
-                    <Button
-                      title="Delete"
-                      type="outline"
-                      buttonStyle={{ borderColor: theme.colors.error }}
-                      titleStyle={{ color: theme.colors.error }}
-                      onPress={() => handleDeleteDocument(doc)}
-                      containerStyle={styles.cardButton}
-                    />
-                  </View>
-                </Card>
-              ))
-            )}
-          </ScrollView>
+      ) : null}
 
-          {/* Document Viewer */}
-          <View style={styles.documentViewer}>
-            {selectedDocument ? (
-              <DocumentViewer document={selectedDocument} />
-            ) : (
-              <Card containerStyle={styles.noDocumentCard}>
-                <Text style={styles.noDocumentText}>
-                  Select a document to view
-                </Text>
-              </Card>
-            )}
-          </View>
-        </View>
+      {selectedDocument && (
+        <DocumentViewer
+          document={selectedDocument}
+          visible={!!selectedDocument}
+          onClose={() => setSelectedDocument(null)}
+        />
       )}
-    </View>
+    </ScrollView>
   );
 };
 
@@ -154,10 +191,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: theme.spacing.md,
   },
-  content: {
+  loadingContainer: {
     flex: 1,
-    flexDirection: 'row',
-    gap: theme.spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.xl,
   },
   documentList: {
     flex: 1,
@@ -202,6 +240,31 @@ const styles = StyleSheet.create({
   noUserText: {
     textAlign: 'center',
     marginTop: theme.spacing.xl,
+  },
+  documentItem: {
+    marginBottom: theme.spacing.sm,
+  },
+  documentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  badge: {
+    marginLeft: 8,
+  },
+  analysisInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 8,
+  },
+  documentTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  documentMeta: {
+    fontSize: 14,
+    color: theme.colors.grey3,
   },
 });
 

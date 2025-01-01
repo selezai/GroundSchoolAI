@@ -83,11 +83,11 @@ class InstructorService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': config.claude.apiKey,
+          'x-api-key': config.anthropic.apiKey,
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-2',
+          model: config.anthropic.claude,
           max_tokens: 1000,
           messages: [
             {

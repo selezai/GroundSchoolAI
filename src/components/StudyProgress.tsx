@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Button, Icon } from 'react-native-elements';
+import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { Text, Card, Button, Icon } from '@rneui/themed';
 import { analyticsService } from '../services/analytics';
 import { theme } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,7 +47,16 @@ const StudyProgress: React.FC<StudyProgressProps> = ({ onPressCategory }) => {
   };
 
   const renderStreakBadge = () => (
-    <Card containerStyle={styles.streakCard}>
+    <Card
+      wrapperStyle={{ padding: 15 }}
+      containerStyle={{
+        borderRadius: 10,
+        ...theme.shadows.sm,
+        marginHorizontal: theme.spacing.md,
+        marginTop: theme.spacing.md,
+        backgroundColor: theme.colors.surface,
+      }}
+    >
       <View style={styles.streakContainer}>
         <Icon
           name="local-fire-department"
@@ -71,7 +80,15 @@ const StudyProgress: React.FC<StudyProgressProps> = ({ onPressCategory }) => {
     const progressColor = getProgressColor(accuracy);
 
     return (
-      <Card key={category.category} containerStyle={styles.categoryCard}>
+      <Card
+        wrapperStyle={{ padding: 15 }}
+        containerStyle={{
+          borderRadius: 10,
+          ...theme.shadows.sm,
+          marginBottom: theme.spacing.md,
+          backgroundColor: theme.colors.surface,
+        }}
+      >
         <Card.Title>{category.category}</Card.Title>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
@@ -98,7 +115,10 @@ const StudyProgress: React.FC<StudyProgressProps> = ({ onPressCategory }) => {
           title="Practice"
           type="outline"
           onPress={() => onPressCategory?.(category.category)}
-          buttonStyle={[styles.practiceButton, { borderColor: progressColor }]}
+          buttonStyle={[
+            styles.practiceButton,
+            { borderColor: progressColor, borderRadius: theme.borderRadius.sm },
+          ]}
           titleStyle={{ color: progressColor }}
         />
       </Card>
@@ -107,7 +127,7 @@ const StudyProgress: React.FC<StudyProgressProps> = ({ onPressCategory }) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
@@ -120,14 +140,29 @@ const StudyProgress: React.FC<StudyProgressProps> = ({ onPressCategory }) => {
         {progress.map(renderCategoryProgress)}
       </View>
       {progress.length === 0 && (
-        <Card containerStyle={styles.emptyCard}>
+        <Card
+          wrapperStyle={{ padding: 15 }}
+          containerStyle={{
+            borderRadius: 10,
+            ...theme.shadows.sm,
+            marginHorizontal: theme.spacing.md,
+            marginTop: theme.spacing.xl,
+            padding: theme.spacing.xl,
+            alignItems: 'center',
+            backgroundColor: theme.colors.surface,
+          }}
+        >
           <Text style={styles.emptyText}>
             Start studying to track your progress!
           </Text>
           <Button
             title="Begin Study Session"
             onPress={() => onPressCategory?.('General')}
-            buttonStyle={styles.beginButton}
+            buttonStyle={{
+              backgroundColor: theme.colors.primary,
+              borderRadius: theme.borderRadius.sm,
+              paddingHorizontal: theme.spacing.xl,
+            }}
           />
         </Card>
       )}
@@ -139,18 +174,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  streakCard: {
-    borderRadius: theme.borderRadius.md,
-    marginHorizontal: theme.spacing.md,
-    marginTop: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    ...theme.shadows.sm,
   },
   streakContainer: {
     flexDirection: 'row',
@@ -171,12 +194,6 @@ const styles = StyleSheet.create({
   },
   categoriesContainer: {
     padding: theme.spacing.sm,
-  },
-  categoryCard: {
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    ...theme.shadows.sm,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -211,27 +228,12 @@ const styles = StyleSheet.create({
   },
   practiceButton: {
     borderWidth: 2,
-    borderRadius: theme.borderRadius.sm,
-  },
-  emptyCard: {
-    borderRadius: theme.borderRadius.md,
-    marginHorizontal: theme.spacing.md,
-    marginTop: theme.spacing.xl,
-    padding: theme.spacing.xl,
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    ...theme.shadows.sm,
   },
   emptyText: {
     fontSize: theme.typography.body.fontSize,
     color: theme.colors.text,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
-  },
-  beginButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.sm,
-    paddingHorizontal: theme.spacing.xl,
   },
 });
 

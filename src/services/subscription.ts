@@ -1,206 +1,124 @@
 import { supabase } from './supabase';
-import { paystackService } from './paystack';
+import { env } from '../config/env';
 
 export interface SubscriptionPlan {
   id: string;
   name: string;
-  description: string;
   price: number;
-  duration_months: number;
   features: string[];
+  duration: number;
 }
 
-export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
+export const subscriptionPlans: SubscriptionPlan[] = [
   {
     id: 'basic',
-    name: 'Basic Plan',
-    description: 'Essential features for exam preparation',
-    price: 499,
-    duration_months: 1,
-    features: [
-      'Access to study materials',
-      'Basic question bank',
-      'Progress tracking',
-    ],
+    name: 'Basic',
+    price: 1000,
+    features: ['Access to basic questions', 'Progress tracking'],
+    duration: 30,
   },
   {
     id: 'premium',
-    name: 'Premium Plan',
-    description: 'Complete exam preparation toolkit',
-    price: 999,
-    duration_months: 1,
-    features: [
-      'All Basic Plan features',
-      'Advanced question bank',
-      'Mock exams',
-      'Performance analytics',
-      'Priority support',
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro Plan',
-    description: 'Ultimate learning experience',
-    price: 1999,
-    duration_months: 3,
-    features: [
-      'All Premium Plan features',
-      'AI-powered study recommendations',
-      'One-on-one instructor support',
-      'Exam guarantee',
-      'Offline access',
-    ],
+    name: 'Premium',
+    price: 2500,
+    features: ['All basic features', 'Advanced questions', 'Mock exams', 'AI tutor assistance'],
+    duration: 30,
   },
 ];
 
-class SubscriptionService {
-  async getCurrentPlan(userId: string): Promise<any> {
-    try {
-      const { data: subscription, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .single();
+export class SubscriptionService {
+  async getCurrentSubscription(userId: string) {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
 
-      if (error) throw error;
-      return subscription;
-    } catch (error) {
-      console.error('Error getting current plan:', error);
-      throw error;
-    }
+    if (error) throw error;
+    return data;
   }
 
-  async subscribeToPlan(
-    userId: string,
-    email: string,
-    planId: string
-  ): Promise<string> {
-    try {
-      const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
-      if (!plan) {
-        throw new Error('Invalid plan selected');
-      }
-
-      // Initialize payment with Paystack
-      const authorizationUrl = await paystackService.processSubscriptionPayment(
-        userId,
+  async createPaystackTransaction(email: string, amount: number, planId: string) {
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.paystack.secretKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         email,
-        planId,
-        plan.price
-      );
-
-      // Create subscription record
-      const { error } = await supabase.from('subscriptions').insert([
-        {
-          user_id: userId,
+        amount: amount * 100, // Convert to kobo
+        metadata: {
           plan_id: planId,
-          status: 'pending',
-          start_date: new Date().toISOString(),
-          end_date: new Date(
-            Date.now() + plan.duration_months * 30 * 24 * 60 * 60 * 1000
-          ).toISOString(),
         },
-      ]);
+      }),
+    });
 
-      if (error) throw error;
-
-      return authorizationUrl;
-    } catch (error) {
-      console.error('Error subscribing to plan:', error);
-      throw error;
-    }
+    const data = await response.json();
+    if (!data.status) throw new Error(data.message);
+    return data.data;
   }
 
-  async cancelSubscription(userId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId)
-        .eq('status', 'active');
+  async verifyPaystackTransaction(reference: string) {
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: {
+        Authorization: `Bearer ${env.paystack.secretKey}`,
+      },
+    });
 
-      if (error) throw error;
-
-      await supabase
-        .from('profiles')
-        .update({
-          subscription_status: 'cancelled',
-        })
-        .eq('id', userId);
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
-      throw error;
-    }
+    const data = await response.json();
+    if (!data.status) throw new Error(data.message);
+    return data.data;
   }
 
-  async getSubscriptionHistory(userId: string): Promise<any[]> {
+  async updateSubscription(userId: string, planId: string, expiryDate: Date) {
+    const { error } = await supabase
+      .from('subscriptions')
+      .upsert({
+        user_id: userId,
+        plan_id: planId,
+        expiry_date: expiryDate.toISOString(),
+      });
+
+    if (error) throw error;
+  }
+
+  async verifyPayment(reference: string): Promise<{
+    status: string;
+    message?: string;
+  }> {
     try {
       const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error getting subscription history:', error);
-      throw error;
-    }
-  }
-
-  async checkSubscriptionStatus(userId: string): Promise<boolean> {
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('subscription_status, trial_end_date')
-        .eq('id', userId)
+        .from('payment_verifications')
+        .insert([
+          {
+            reference,
+            status: 'pending',
+          },
+        ])
+        .select()
         .single();
 
-      if (profileError) throw profileError;
-
-      if (profile.subscription_status === 'trial') {
-        const trialEndDate = new Date(profile.trial_end_date);
-        if (trialEndDate < new Date()) {
-          await supabase
-            .from('profiles')
-            .update({
-              subscription_status: 'expired',
-            })
-            .eq('id', userId);
-          return false;
-        }
-        return true;
-      }
-
-      return profile.subscription_status === 'active';
-    } catch (error) {
-      console.error('Error checking subscription status:', error);
-      throw error;
-    }
-  }
-
-  async startTrial(userId: string): Promise<void> {
-    try {
-      const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 14); // 14-day trial
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          subscription_status: 'trial',
-          trial_end_date: trialEndDate.toISOString(),
-        })
-        .eq('id', userId);
-
       if (error) throw error;
+      
+      // Trigger serverless function to verify payment
+      const { data: verificationData, error: verificationError } = await supabase
+        .functions.invoke('verify-payment', {
+          body: { reference },
+        });
+
+      if (verificationError) throw verificationError;
+
+      return {
+        status: verificationData.status,
+        message: verificationData.message,
+      };
     } catch (error) {
-      console.error('Error starting trial:', error);
-      throw error;
+      console.error('Error verifying payment:', error);
+      return {
+        status: 'error',
+        message: 'Failed to verify payment',
+      };
     }
   }
 }
