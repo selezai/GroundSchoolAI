@@ -1,6 +1,11 @@
 import { supabase } from './supabase';
 import { config } from '../config/env';
 import { PostgrestError } from '@supabase/supabase-js';
+import { Anthropic } from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic({
+  apiKey: config.anthropic.apiKey,
+});
 
 export interface Question {
   id: string;
@@ -22,6 +27,7 @@ interface Document {
   title: string;
   category: string;
   user_id: string;
+  file_path: string;
 }
 
 interface QuestionWithDocument extends Question {
@@ -41,28 +47,80 @@ class QuestionService {
         throw new Error(docError?.message || 'Document not found');
       }
 
-      // TODO: Implement AI-based question generation using Claude API
-      // For now, return mock questions
-      const mockQuestions: Omit<Question, 'id'>[] = Array(count).fill(null).map((_, index) => ({
+      // Get document content
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from('documents')
+        .download(document.file_path);
+
+      if (fileError) throw fileError;
+
+      // Convert blob to text
+      const content = await fileData.text();
+
+      // Generate questions using Claude
+      const message = await anthropic.messages.create({
+        model: 'claude-3-opus-20240229',
+        max_tokens: 2000,
+        temperature: 0.3,
+        messages: [{
+          role: 'user',
+          content: `You are an expert aviation instructor creating exam questions. Given this aviation document, generate ${count} questions of varying difficulty. Include the correct answer, three incorrect answers, and a brief explanation for each question.
+
+Document content: ${content}
+
+Format your response as a JSON array with this structure:
+[{
+  "content": "Question text",
+  "correct_answer": "Correct answer",
+  "incorrect_answers": ["Wrong 1", "Wrong 2", "Wrong 3"],
+  "explanation": "Why this is the correct answer",
+  "difficulty": "easy|medium|hard"
+}]
+
+Ensure questions:
+1. Test understanding, not just memorization
+2. Cover different aspects of the content
+3. Are clear and unambiguous
+4. Have plausible incorrect answers
+5. Include helpful explanations`
+        }]
+      });
+
+      // Extract the content from the first text block
+      const textBlock = message.content.find(block => 
+        block.type === 'text'
+      );
+
+      if (!textBlock || textBlock.type !== 'text') {
+        throw new Error('Unexpected response format from Claude');
+      }
+
+      const generatedQuestions = JSON.parse(textBlock.text) as Array<{
+        content: string;
+        correct_answer: string;
+        incorrect_answers: string[];
+        explanation: string;
+        difficulty: Question['difficulty'];
+      }>;
+
+      // Prepare questions for database
+      const questionsToInsert = generatedQuestions.map((q) => ({
         document_id: documentId,
-        content: `Sample question ${index + 1} for ${document.title}`,
-        correct_answer: 'Correct answer',
-        incorrect_answers: [
-          'Incorrect answer 1',
-          'Incorrect answer 2',
-          'Incorrect answer 3',
-        ],
-        explanation: 'Sample explanation',
-        difficulty: index % 3 === 0 ? 'easy' : index % 3 === 1 ? 'medium' : 'hard',
+        content: q.content,
+        correct_answer: q.correct_answer,
+        incorrect_answers: q.incorrect_answers,
+        explanation: q.explanation,
+        difficulty: q.difficulty,
         category: document.category,
         created_at: new Date().toISOString(),
         times_shown: 0,
         times_correct: 0,
       }));
 
+      // Insert questions into database
       const { data: questions, error } = await supabase
         .from('questions')
-        .insert(mockQuestions)
+        .insert(questionsToInsert)
         .select();
 
       if (error) throw error;
@@ -84,7 +142,7 @@ class QuestionService {
     try {
       let query = supabase
         .from('questions')
-        .select('*, documents!inner(*)') as any;
+        .select('*, documents!inner(*)');
 
       // Apply filters
       if (filters.category) {
@@ -108,47 +166,32 @@ class QuestionService {
       const { data, error } = await query;
 
       if (error) throw error;
-      if (!data) return [];
-
-      return data.map((q: QuestionWithDocument) => ({
-        ...q,
-        times_shown: q.times_shown || 0,
-        times_correct: q.times_correct || 0,
-      }));
+      return (data as QuestionWithDocument[]) || [];
     } catch (error) {
-      console.error('Error fetching questions:', error);
+      console.error('Error getting questions:', error);
       throw error;
     }
   }
 
   async recordAnswer(questionId: string, correct: boolean): Promise<void> {
     try {
-      const updates = {
-        last_shown: new Date().toISOString(),
-        times_shown: undefined as any,
-        times_correct: undefined as any,
-      };
-
-      // First get current values
-      const { data: currentQuestion, error: fetchError } = await supabase
+      const { data: question, error: getError } = await supabase
         .from('questions')
         .select('times_shown, times_correct')
         .eq('id', questionId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (getError) throw getError;
 
-      // Calculate new values
-      const currentTimesShown = currentQuestion?.times_shown ?? 0;
-      const currentTimesCorrect = currentQuestion?.times_correct ?? 0;
+      const timesShown = (question?.times_shown || 0) + 1;
+      const timesCorrect = (question?.times_correct || 0) + (correct ? 1 : 0);
 
-      // Update with new values
       const { error: updateError } = await supabase
         .from('questions')
         .update({
           last_shown: new Date().toISOString(),
-          times_shown: currentTimesShown + 1,
-          times_correct: correct ? currentTimesCorrect + 1 : currentTimesCorrect,
+          times_shown: timesShown,
+          times_correct: timesCorrect,
         })
         .eq('id', questionId);
 

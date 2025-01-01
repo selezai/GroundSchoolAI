@@ -1,8 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import { NotificationTriggerInput } from 'expo-notifications';
 
-interface NotificationData {
+interface NotificationContent {
   title: string;
   body: string;
   data?: Record<string, any>;
@@ -38,8 +39,8 @@ class NotificationService {
   }
 
   async scheduleNotification(
-    notification: NotificationData,
-    trigger: Notifications.NotificationTriggerInput
+    notification: NotificationContent,
+    trigger: NotificationTriggerInput
   ): Promise<string> {
     try {
       const notificationId = await Notifications.scheduleNotificationAsync({
@@ -127,24 +128,65 @@ class NotificationService {
     time: Date,
     recurringDays: number[] = []
   ): Promise<string> {
-    const trigger: Notifications.NotificationTriggerInput = recurringDays.length
-      ? {
-          hour: time.getHours(),
-          minute: time.getMinutes(),
-          repeats: true,
-          weekday: recurringDays,
-        }
-      : {
-          seconds: Math.floor((time.getTime() - Date.now()) / 1000),
-        };
+    if (recurringDays.length) {
+      return await this.scheduleWeeklyNotification(
+        'Time to Study!',
+        'Keep up your study streak and improve your aviation knowledge.',
+        time.getHours(),
+        time.getMinutes(),
+        recurringDays[0]
+      );
+    } else {
+      return await this.scheduleDateNotification(
+        'Time to Study!',
+        'Keep up your study streak and improve your aviation knowledge.',
+        time
+      );
+    }
+  }
 
-    return this.scheduleNotification(
-      {
-        title: 'Time to Study!',
-        body: 'Keep up your study streak and improve your aviation knowledge.',
+  async scheduleWeeklyNotification(
+    title: string,
+    body: string,
+    hour: number,
+    minute: number,
+    weekday: number
+  ): Promise<string> {
+    const trigger = {
+      channelId: 'default',
+      type: 'weekly' as const,
+      hour,
+      minute,
+      weekday,
+    };
+
+    return await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
       },
-      trigger
-    );
+      trigger,
+    });
+  }
+
+  async scheduleDateNotification(
+    title: string,
+    body: string,
+    date: Date
+  ): Promise<string> {
+    const trigger = {
+      channelId: 'default',
+      type: 'date' as const,
+      date,
+    };
+
+    return await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+      },
+      trigger,
+    });
   }
 
   // Exam preparation notifications
@@ -164,16 +206,12 @@ class NotificationService {
           examDate.getTime() - days * 24 * 60 * 60 * 1000
         );
 
-        await this.scheduleNotification(
-          {
-            title: 'Exam Preparation Reminder',
-            body: `Your exam is in ${days} day${
-              days > 1 ? 's' : ''
-            }. Time to intensify your preparation!`,
-          },
-          {
-            date: notificationDate,
-          }
+        await this.scheduleDateNotification(
+          'Exam Preparation Reminder',
+          `Your exam is in ${days} day${
+            days > 1 ? 's' : ''
+          }. Time to intensify your preparation!`,
+          notificationDate
         );
       }
     }

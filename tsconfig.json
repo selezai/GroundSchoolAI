@@ -4,14 +4,20 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@env": ["node_modules/react-native-dotenv"]
+      "@env": ["./src/types/env.d.ts"]
     },
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": [
+      "./src/types",
+      "./node_modules/@types"
+    ],
+    "types": [
+      "node"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "src/**/*",
+    "src/types/*.d.ts"
   ]
 }

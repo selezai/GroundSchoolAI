@@ -7,7 +7,7 @@ import { config } from '../config/env';
 
 const ProfileScreen = () => {
   const handleEmailSupport = () => {
-    Linking.openURL(`mailto:${config.support.email}`);
+    Linking.openURL(`mailto:${config.email.email}`);
   };
 
   const handleReportBug = () => {

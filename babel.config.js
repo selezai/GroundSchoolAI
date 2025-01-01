@@ -7,7 +7,13 @@ module.exports = function(api) {
         moduleName: '@env',
         path: '.env',
         blacklist: null,
-        whitelist: null,
+        whitelist: [
+          'SUPABASE_URL',
+          'SUPABASE_ANON_KEY',
+          'ANTHROPIC_API_KEY',
+          'PAYSTACK_SECRET_KEY',
+          'CLAUDE_MODEL'
+        ],
         safe: false,
         allowUndefined: true,
       }],

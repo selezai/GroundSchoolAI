@@ -1,41 +1,47 @@
 import { Platform } from 'react-native';
+import { DefaultTheme } from '@react-navigation/native';
 
 export const theme = {
+  ...DefaultTheme,
   colors: {
-    primary: '#1E3A8A', // Deep blue
-    secondary: '#3B82F6', // Sky blue
-    accent: '#F97316', // Orange
-    background: '#F8FAFC', // Light gray
+    primary: '#007AFF',
+    secondary: '#5856D6',
+    accent: '#FF2D55',
+    background: '#F8F9FA',
     surface: '#FFFFFF',
-    text: '#1F2937',
-    disabled: '#9CA3AF',
-    border: '#E5E7EB',
-    error: '#EF4444',
-    warning: '#F59E0B',
-    success: '#10B981',
+    text: '#000000',
+    disabled: '#C7C7CC',
+    border: '#E5E5EA',
+    error: '#FF3B30',
+    warning: '#FF9500',
+    success: '#34C759',
+    grey3: '#C7C7CC',
+    grey5: '#E5E5EA',
   },
   typography: {
     h1: {
       fontSize: 32,
-      fontWeight: 'bold',
+      fontWeight: '700' as const,
     },
     h2: {
       fontSize: 28,
-      fontWeight: 'bold',
+      fontWeight: '700' as const,
     },
     h3: {
       fontSize: 24,
-      fontWeight: 'bold',
+      fontWeight: '600' as const,
     },
     h4: {
       fontSize: 20,
-      fontWeight: 'bold',
+      fontWeight: '600' as const,
     },
     body: {
       fontSize: 16,
+      fontWeight: '400' as const,
     },
     caption: {
       fontSize: 14,
+      fontWeight: '400' as const,
     },
   },
   spacing: {
@@ -52,20 +58,16 @@ export const theme = {
     xl: 16,
   },
   shadows: {
-    sm: Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 1.41,
+    sm: {
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
       },
-      android: {
-        elevation: 2,
-      },
-    }),
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
     md: Platform.select({
       ios: {
         shadowColor: '#000',
@@ -80,19 +82,7 @@ export const theme = {
         elevation: 5,
       },
     }),
-    lg: Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: 4,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 4.65,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-};
+  }
+} as const;
+
+export type Theme = typeof theme;

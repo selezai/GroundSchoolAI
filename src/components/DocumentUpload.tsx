@@ -69,12 +69,15 @@ const DocumentUpload: React.FC<Props> = ({ onUploadComplete, onClose }) => {
       const fileExt = selectedFile.name.split('.').pop();
       const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
+      // Read file as blob
+      const fileBlob = await fetch(selectedFile.uri).then(r => r.blob());
+
       const { data: fileData, error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(filePath, {
-          uri: selectedFile.uri,
-          type: selectedFile.mimeType,
-          name: selectedFile.name,
+        .upload(filePath, fileBlob, {
+          contentType: selectedFile.mimeType,
+          cacheControl: '3600',
+          upsert: false
         });
 
       if (uploadError) throw uploadError;

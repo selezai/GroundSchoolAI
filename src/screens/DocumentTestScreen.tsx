@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, Alert, ScrollView } from 'react-native';
 import { Text, Button } from '@rneui/themed';
-import { DocumentUpload } from '../components/DocumentUpload';
-import { DocumentViewer } from '../components/DocumentViewer';
 import { Document, documentService } from '../services/document';
 import { useAuth } from '../contexts/AuthContext';
 import { theme } from '../config/theme';
+import DocumentUpload from '../components/DocumentUpload';
+import DocumentViewer from '../components/DocumentViewer';
 
 export const DocumentTestScreen: React.FC = () => {
   const { user } = useAuth();
@@ -43,7 +43,7 @@ export const DocumentTestScreen: React.FC = () => {
 
   const handleDeleteDocument = async (doc: Document) => {
     try {
-      await documentService.deleteDocument(doc.id);
+      await documentService.deleteDocument(doc);
       Alert.alert('Success', 'Document deleted successfully');
       loadDocuments();
       if (selectedDocument?.id === doc.id) {
@@ -109,7 +109,11 @@ export const DocumentTestScreen: React.FC = () => {
 
           <View style={styles.documentViewer}>
             {selectedDocument ? (
-              <DocumentViewer document={selectedDocument} />
+              <DocumentViewer 
+                document={selectedDocument}
+                visible={!!selectedDocument}
+                onClose={() => setSelectedDocument(null)}
+              />
             ) : (
               <Text style={styles.noDocument}>
                 Select a document to view

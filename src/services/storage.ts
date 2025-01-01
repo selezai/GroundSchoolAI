@@ -1,4 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from './supabase';
+import { FileObject } from '@supabase/storage-js';
+
+type StorageMetadata = Record<string, string>;
 
 class StorageService {
   private readonly PREFIX = '@GroundSchoolAI:';
@@ -68,12 +72,12 @@ class StorageService {
     }
   }
 
-  async multiSet(keyValuePairs: Array<[string, any]>): Promise<void> {
+  async multiSet(keyValuePairs: Array<{ key: string; value: any }>): Promise<void> {
     try {
-      const prefixedPairs = keyValuePairs.map(([key, value]) => [
+      const prefixedPairs = keyValuePairs.map(({ key, value }) => [
         this.PREFIX + key,
         JSON.stringify(value),
-      ]);
+      ]) as [string, string][];
       await AsyncStorage.multiSet(prefixedPairs);
     } catch (error) {
       console.error('Error setting multiple items:', error);
@@ -161,6 +165,35 @@ class StorageService {
       console.error('Error marking data as synced:', error);
       throw error;
     }
+  }
+
+  async uploadFile(
+    bucket: string,
+    path: string,
+    file: Blob | File | FormData | string,
+    metadata?: StorageMetadata,
+    options?: {
+      contentType?: string;
+      upsert?: boolean;
+      cacheControl?: string;
+    }
+  ): Promise<{ path: string; url: string }> {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, {
+        metadata,
+        cacheControl: options?.cacheControl || '3600',
+        upsert: options?.upsert || false,
+        contentType: options?.contentType,
+      });
+
+    if (error) throw error;
+    if (!data) throw new Error('Upload failed');
+
+    return {
+      path: data.path,
+      url: supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl,
+    };
   }
 }
 

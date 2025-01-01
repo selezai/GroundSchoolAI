@@ -8,7 +8,7 @@ import { Document, documentService } from '../services/document';
 interface Props {
   documents: Document[];
   onDocumentSelect: (document: Document) => void;
-  onDocumentDelete: (documentId: string) => void;
+  onDocumentDelete: (document: Document) => void;
   onRefresh: () => void;
 }
 
@@ -19,50 +19,95 @@ const DocumentList: React.FC<Props> = ({
   onRefresh,
 }) => {
   const handleDelete = async (documentId: string) => {
-    Alert.alert(
-      'Delete Document',
-      'Are you sure you want to delete this document?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await documentService.deleteDocument(documentId);
-              onDocumentDelete(documentId);
-            } catch (error) {
-              console.error('Error deleting document:', error);
-              Alert.alert('Error', 'Failed to delete document');
-            }
-          },
-        },
-      ]
-    );
+    try {
+      const doc = documents.find(d => d.id === documentId);
+      if (!doc) return;
+      await onDocumentDelete(doc);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+    }
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  const formatFileSize = (size: number | undefined): string => {
+    if (!size) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let fileSize = size;
+    let unitIndex = 0;
+  
+    while (fileSize >= 1024 && unitIndex < units.length - 1) {
+      fileSize /= 1024;
+      unitIndex++;
+    }
+  
+    return `${fileSize.toFixed(2)} ${units[unitIndex]}`;
   };
 
   const getStatusColor = (status: Document['status']): string => {
     switch (status) {
-      case 'ready':
+      case 'analyzed':
         return theme.colors.success;
-      case 'processing':
+      case 'analyzing':
         return theme.colors.warning;
-      case 'error':
+      case 'failed':
         return theme.colors.error;
+      case 'pending':
+        return theme.colors.text;
       default:
         return theme.colors.text;
     }
+  };
+
+  const renderDocument = (document: Document) => {
+    const fileType = document.file_type;
+    const fileSize = document.file_size;
+
+    return (
+      <TouchableOpacity
+        key={document.id}
+        style={styles.documentItem}
+        onPress={() => onDocumentSelect(document)}
+      >
+        <View style={styles.documentInfo}>
+          <Icon
+            name={fileType.includes('pdf') ? 'picture-as-pdf' : 'image'}
+            type="material"
+            size={24}
+            color={theme.colors.primary}
+            containerStyle={styles.iconContainer}
+          />
+          <View style={styles.documentDetails}>
+            <Text style={styles.documentTitle} numberOfLines={1}>
+              {document.title}
+            </Text>
+            <View style={styles.documentMeta}>
+              <Text style={styles.documentCategory}>{document.category}</Text>
+              <Text style={styles.documentSize}>
+                {formatFileSize(fileSize)}
+              </Text>
+              <Text
+                style={[
+                  styles.documentStatus,
+                  { color: getStatusColor(document.status) },
+                ]}
+              >
+                {document.status}
+              </Text>
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity
+          onPress={() => handleDelete(document.id)}
+          style={styles.deleteButton}
+        >
+          <Icon
+            name="delete-outline"
+            type="material"
+            size={24}
+            color={theme.colors.error}
+          />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
   };
 
   if (documents.length === 0) {
@@ -81,53 +126,7 @@ const DocumentList: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      {documents.map((document) => (
-        <TouchableOpacity
-          key={document.id}
-          onPress={() => onDocumentSelect(document)}
-          style={styles.documentItem}
-        >
-          <View style={styles.documentInfo}>
-            <Icon
-              name={document.file_type.includes('pdf') ? 'picture-as-pdf' : 'image'}
-              type="material"
-              size={24}
-              color={theme.colors.primary}
-              containerStyle={styles.iconContainer}
-            />
-            <View style={styles.documentDetails}>
-              <Text style={styles.documentTitle} numberOfLines={1}>
-                {document.title}
-              </Text>
-              <View style={styles.documentMeta}>
-                <Text style={styles.documentCategory}>{document.category}</Text>
-                <Text style={styles.documentSize}>
-                  {formatFileSize(document.file_size)}
-                </Text>
-                <Text
-                  style={[
-                    styles.documentStatus,
-                    { color: getStatusColor(document.status) },
-                  ]}
-                >
-                  {document.status}
-                </Text>
-              </View>
-            </View>
-          </View>
-          <TouchableOpacity
-            onPress={() => handleDelete(document.id)}
-            style={styles.deleteButton}
-          >
-            <Icon
-              name="delete-outline"
-              type="material"
-              size={24}
-              color={theme.colors.error}
-            />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      ))}
+      {documents.map(document => renderDocument(document))}
     </View>
   );
 };

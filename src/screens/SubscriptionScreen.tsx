@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Text, Button, Icon } from 'react-native-elements';
 import { Card } from '@rneui/themed';
 import { theme } from '../config/theme';
@@ -7,12 +7,23 @@ import { useAuth } from '../contexts/AuthContext';
 import { subscriptionService, subscriptionPlans } from '../services/subscription';
 import { WebView } from 'react-native-webview';
 
+interface Subscription {
+  id: string;
+  userId: string;
+  planId: string;
+  status: 'active' | 'inactive' | 'expired';
+  expiryDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const SubscriptionScreen = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+  const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -32,40 +43,56 @@ const SubscriptionScreen = () => {
   const handleSubscribe = async (planId: string) => {
     try {
       setLoading(true);
+      const plan = subscriptionPlans.find(p => p.id === planId);
+      if (!plan) {
+        throw new Error('Invalid plan selected');
+      }
       const transaction = await subscriptionService.createPaystackTransaction(
-        planId,
-        user!.email
+        user!.email,
+        plan.price,
+        planId
       );
       
       setPaymentUrl(transaction.authorization_url);
       setShowPaymentWebView(true);
     } catch (error) {
-      Alert.alert('Error', 'Failed to initiate subscription. Please try again.');
+      console.error('Error creating subscription:', error);
+      Alert.alert('Error', 'Failed to create subscription');
     } finally {
       setLoading(false);
     }
   };
 
   const handlePaymentCallback = async (url: string) => {
-    if (url.includes('/payment/callback')) {
-      const reference = new URL(url).searchParams.get('reference');
-      if (reference) {
-        try {
-          const verification = await subscriptionService.verifyPaystackTransaction(reference);
-          if (verification.status === 'success') {
-            await subscriptionService.updateSubscription(
-              user!.id,
-              verification.metadata.plan_id,
-              reference
-            );
-            await fetchCurrentSubscription();
-            Alert.alert('Success', 'Subscription activated successfully!');
-          }
-        } catch (error) {
-          Alert.alert('Error', 'Failed to verify payment. Please contact support.');
-        }
+    try {
+      const reference = url.split('reference=')[1];
+      if (!reference) {
+        Alert.alert('Error', 'Invalid payment reference');
+        return;
       }
-      setShowPaymentWebView(false);
+      await handlePaymentSuccess(reference);
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      Alert.alert('Error', 'Failed to verify payment');
+    }
+    setShowPaymentWebView(false);
+  };
+
+  const handlePaymentSuccess = async (reference: string) => {
+    try {
+      setVerifying(true);
+      const response = await subscriptionService.verifyPayment(reference);
+      if (response.status === 'success') {
+        Alert.alert('Success', 'Payment verified successfully');
+        await fetchCurrentSubscription();
+      } else {
+        Alert.alert('Error', response.message || 'Payment verification failed');
+      }
+    } catch (error) {
+      console.error('Payment verification error:', error);
+      Alert.alert('Error', 'Failed to verify payment');
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -88,13 +115,13 @@ const SubscriptionScreen = () => {
           <Card.Divider />
           <View style={styles.currentPlanInfo}>
             <Text style={styles.planName}>
-              {subscriptionPlans.find(p => p.id === currentSubscription.plan_id)?.name}
+              {subscriptionPlans.find(p => p.id === currentSubscription.planId)?.name}
             </Text>
             <Text style={styles.planStatus}>
               Status: {currentSubscription.status}
             </Text>
             <Text style={styles.planExpiry}>
-              Expires: {new Date(currentSubscription.end_date).toLocaleDateString()}
+              Expires: {new Date(currentSubscription.expiryDate).toLocaleDateString()}
             </Text>
           </View>
         </Card>
@@ -124,13 +151,13 @@ const SubscriptionScreen = () => {
           ))}
 
           <Button
-            title={currentSubscription?.plan_id === plan.id ? 'Current Plan' : 'Subscribe'}
+            title={currentSubscription?.planId === plan.id ? 'Current Plan' : 'Subscribe'}
             onPress={() => handleSubscribe(plan.id)}
-            disabled={currentSubscription?.plan_id === plan.id || loading}
+            disabled={currentSubscription?.planId === plan.id || loading}
             loading={loading}
             buttonStyle={[
               styles.subscribeButton,
-              currentSubscription?.plan_id === plan.id && styles.currentPlanButton
+              currentSubscription?.planId === plan.id && styles.currentPlanButton
             ]}
             containerStyle={styles.buttonContainer}
           />

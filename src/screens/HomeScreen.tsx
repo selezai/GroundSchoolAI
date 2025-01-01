@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card } from 'react-native-elements';
+import { ScrollView, View, StyleSheet } from 'react-native';
+import { Text, Card as RNECard } from '@rneui/themed';
 import { theme } from '../config/theme';
 
 const HomeScreen = () => {
@@ -14,36 +14,37 @@ const HomeScreen = () => {
 
       {/* Quick Stats */}
       <View style={styles.statsContainer}>
-        <Card containerStyle={styles.statCard}>
-          <Card.Title>Study Progress</Card.Title>
-          <Text>Coming Soon</Text>
-        </Card>
+        <RNECard containerStyle={styles.statCard}>
+          <RNECard.Title>Study Progress</RNECard.Title>
+          <RNECard.FeaturedSubtitle>Coming Soon</RNECard.FeaturedSubtitle>
+        </RNECard>
         
-        <Card containerStyle={styles.statCard}>
-          <Card.Title>Questions Answered</Card.Title>
-          <Text>Coming Soon</Text>
-        </Card>
+        <RNECard containerStyle={styles.statCard}>
+          <RNECard.Title>Questions Answered</RNECard.Title>
+          <RNECard.FeaturedSubtitle>Coming Soon</RNECard.FeaturedSubtitle>
+        </RNECard>
       </View>
 
       {/* Recent Documents */}
       <View style={styles.section}>
         <Text h4 style={styles.sectionTitle}>Recent Documents</Text>
-        <Card containerStyle={styles.documentCard}>
-          <Text>No documents yet</Text>
-        </Card>
+        <RNECard containerStyle={styles.documentCard}>
+          <RNECard.Title>No Recent Documents</RNECard.Title>
+          <RNECard.FeaturedSubtitle>Upload your first document to get started</RNECard.FeaturedSubtitle>
+        </RNECard>
       </View>
 
       {/* Quick Actions */}
       <View style={styles.section}>
         <Text h4 style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsContainer}>
-          <Card containerStyle={styles.actionCard}>
-            <Card.Title>Upload Document</Card.Title>
-          </Card>
+          <RNECard containerStyle={styles.actionCard}>
+            <RNECard.Title>Upload Document</RNECard.Title>
+          </RNECard>
           
-          <Card containerStyle={styles.actionCard}>
-            <Card.Title>Start Study Session</Card.Title>
-          </Card>
+          <RNECard containerStyle={styles.actionCard}>
+            <RNECard.Title>Start Study Session</RNECard.Title>
+          </RNECard>
         </View>
       </View>
     </ScrollView>

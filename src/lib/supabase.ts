@@ -7,7 +7,7 @@ import { Database } from '../types/supabase';
 // Create Supabase client
 export const supabase = createClient<Database>(
   config.supabase.url,
-  config.supabase.publicKey,
+  config.supabase.anonKey,
   {
     auth: {
       storage: AsyncStorage,

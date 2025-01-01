@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Text, Button, Icon } from 'react-native-elements';
 import { Card } from '@rneui/themed';
 import { theme } from '../config/theme';
