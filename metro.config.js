@@ -15,4 +15,10 @@ config.resolver.resolverMainFields = ['browser', 'react-native', 'main'];
 // Ensure proper handling of platform-specific files
 config.resolver.platforms = ['web', 'ios', 'android'];
 
+// Add aliases for web-specific modules
+config.resolver.extraNodeModules = {
+  'react-native-web': require.resolve('react-native-web'),
+  '@react-navigation/native': require.resolve('@react-navigation/native'),
+};
+
 module.exports = config;
