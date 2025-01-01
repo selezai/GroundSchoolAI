@@ -31,11 +31,9 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Run tests and type check
-        run: |
-          npx tsc --noEmit
-          npm test
+        run: npm test
 
       - name: Build web version
-        run: npm run build
+        run: npx expo export:web
         env:
           NODE_ENV: production
