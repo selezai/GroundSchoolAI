@@ -1,3 +1,44 @@
+## Known Development Dependencies Vulnerabilities
+
+### Current Status (as of January 1, 2025)
+
+The following vulnerabilities have been identified in development dependencies:
+
+1. **ip Package** (High Severity)
+   - Issue: SSRF improper categorization in isPublic
+   - Affected Package: `ip` in `@react-native-community/cli-doctor`
+   - Advisory: https://github.com/advisories/GHSA-2p57-rm9w-gvfp
+   - Status: Known issue in development tooling, not affecting production code
+
+2. **semver Package** (High Severity)
+   - Issue: Regular Expression Denial of Service
+   - Affected Package: `semver` in `@expo/image-utils`
+   - Advisory: https://github.com/advisories/GHSA-c2qf-rxjj-qqgw
+   - Status: Development dependency only
+
+3. **send Package** (High Severity)
+   - Issue: Template injection vulnerability leading to XSS
+   - Affected Package: `send` in `@expo/cli`
+   - Advisory: https://github.com/advisories/GHSA-m6fv-jmcg-4jfg
+   - Status: Development tooling only
+
+### Impact Assessment
+
+These vulnerabilities are present in development dependencies only and do not affect the production build of the application. They are primarily found in:
+- React Native CLI tools
+- Expo development tools
+- Build and development utilities
+
+### Mitigation
+
+1. These vulnerabilities do not affect end users or production deployments
+2. The development tools are used in a trusted environment
+3. We are tracking upstream fixes in React Native and Expo
+
+### Update Plan
+
+We will update these dependencies when new stable versions of our core frameworks (React Native and Expo) are released that address these issues.
+
 <!-- BEGIN MICROSOFT SECURITY.MD V0.0.9 BLOCK -->
 
 ## Security
