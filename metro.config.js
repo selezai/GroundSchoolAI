@@ -19,6 +19,12 @@ config.resolver.platforms = ['web', 'ios', 'android'];
 config.resolver.extraNodeModules = {
   'react-native-web': require.resolve('react-native-web'),
   '@react-navigation/native': require.resolve('@react-navigation/native'),
+  '@react-navigation/bottom-tabs': require.resolve('@react-navigation/bottom-tabs'),
+  '@react-navigation/stack': require.resolve('@react-navigation/stack'),
+  'react-native-safe-area-context': require.resolve('react-native-safe-area-context'),
+  'react-native-screens': require.resolve('react-native-screens'),
+  '@react-native-masked-view/masked-view': require.resolve('@react-native-masked-view/masked-view'),
+  'react-native-gesture-handler': require.resolve('react-native-gesture-handler'),
 };
 
 module.exports = config;
