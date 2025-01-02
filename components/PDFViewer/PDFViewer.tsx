@@ -1,28 +1,20 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import Pdf from 'react-native-pdf';
+import { StyleProp, ViewStyle } from 'react-native';
+import WebView from 'react-native-webview';
 
 interface PDFViewerProps {
-  source: { uri: string };
-  style?: object;
+  source: string;
+  style?: StyleProp<ViewStyle>;
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ source, style }) => {
   return (
-    <Pdf
-      source={source}
-      style={[styles.container, style]}
-      trustAllCerts={false}
+    <WebView
+      source={{ uri: source }}
+      style={style}
+      javaScriptEnabled={true}
     />
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-});
 
 export default PDFViewer;
