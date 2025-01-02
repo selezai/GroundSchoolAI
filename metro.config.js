@@ -25,6 +25,13 @@ config.resolver.extraNodeModules = {
   'react-native-screens': require.resolve('react-native-screens'),
   '@react-native-masked-view/masked-view': require.resolve('@react-native-masked-view/masked-view'),
   'react-native-gesture-handler': require.resolve('react-native-gesture-handler'),
+  '@rneui/themed': require.resolve('@rneui/themed'),
+  '@rneui/base': require.resolve('@rneui/base'),
+  'react-native-elements': require.resolve('react-native-elements'),
+  'react-native-vector-icons': require.resolve('react-native-vector-icons'),
 };
+
+// Configure asset handling for vector icons
+config.resolver.assetExts = [...config.resolver.assetExts, 'ttf'];
 
 module.exports = config;
