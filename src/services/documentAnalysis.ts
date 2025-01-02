@@ -1,10 +1,12 @@
-import { Document } from './document';
+import { Document } from '../types/document';
+import { Block } from '../types/block';
 import { supabase } from './supabase';
+import Anthropic from '@anthropic-ai/sdk';
+import { ANTHROPIC_API_KEY, CLAUDE_MODEL } from '@env';
 import { config } from '../config/env';
-import { Anthropic } from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({
-  apiKey: config.anthropic.apiKey,
+  apiKey: ANTHROPIC_API_KEY,
 });
 
 export interface AnalysisResult {
@@ -56,7 +58,7 @@ export class DocumentAnalysisService {
 
       // Analyze the content using Claude
       const message = await anthropic.messages.create({
-        model: config.anthropic.claude,
+        model: CLAUDE_MODEL,
         max_tokens: 1024,
         temperature: 0,
         messages: [{

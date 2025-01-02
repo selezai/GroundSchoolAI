@@ -6,17 +6,11 @@ module.exports = function(api) {
       ['module:react-native-dotenv', {
         moduleName: '@env',
         path: '.env',
-        blacklist: null,
-        whitelist: [
-          'SUPABASE_URL',
-          'SUPABASE_ANON_KEY',
-          'ANTHROPIC_API_KEY',
-          'PAYSTACK_SECRET_KEY',
-          'CLAUDE_MODEL'
-        ],
-        safe: false,
-        allowUndefined: true,
+        safe: true,
+        allowUndefined: false,
+        envName: process.env.NODE_ENV || 'development'
       }],
-    ],
+      'react-native-reanimated/plugin'
+    ]
   };
 };

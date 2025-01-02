@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { config } from '../config/env';
 import { PostgrestError } from '@supabase/supabase-js';
-import { Anthropic } from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({
   apiKey: config.anthropic.apiKey,
@@ -87,7 +87,7 @@ Ensure questions:
       });
 
       // Extract the content from the first text block
-      const textBlock = message.content.find(block => 
+      const textBlock = message.content.find((block: { type: string }) => 
         block.type === 'text'
       );
 

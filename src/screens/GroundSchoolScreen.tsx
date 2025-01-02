@@ -4,11 +4,12 @@ import { Text, Card, Button } from '@rneui/themed';
 import { theme } from '../config/theme';
 import { Document, documentService } from '../services/document';
 import { supabase } from '../services/supabase';
-import { Anthropic } from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config/env';
+import { ANTHROPIC_API_KEY, CLAUDE_MODEL } from '@env';
 
 const anthropic = new Anthropic({
-  apiKey: config.anthropic.apiKey,
+  apiKey: ANTHROPIC_API_KEY,
 });
 
 interface SimplifiedContent {
@@ -55,7 +56,7 @@ const GroundSchoolScreen = () => {
 
       // Use Claude to simplify the content
       const message = await anthropic.messages.create({
-        model: 'claude-3-opus-20240229',
+        model: CLAUDE_MODEL,
         max_tokens: 1500,
         temperature: 0.3,
         messages: [{

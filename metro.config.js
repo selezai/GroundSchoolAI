@@ -32,6 +32,10 @@ config.resolver.extraNodeModules = {
   'react-native-elements': require.resolve('react-native-elements'),
   'react-native-vector-icons': require.resolve('react-native-vector-icons'),
   'react-native-ratings': require.resolve('react-native-ratings'),
+  'react-native-reanimated': require.resolve('react-native-reanimated'),
+  'react-native-webview': require.resolve('react-native-webview'),
+  '@react-native-async-storage/async-storage': require.resolve('@react-native-async-storage/async-storage'),
+  'invariant': require.resolve('invariant')
 };
 
 // Configure asset handling for vector icons
@@ -39,15 +43,21 @@ config.resolver.assetExts = [...config.resolver.assetExts, 'ttf'];
 
 // Ensure proper module resolution
 config.resolver.disableHierarchicalLookup = false;
-config.resolver.nodeModulesPaths = [
-  path.resolve(__dirname, 'node_modules'),
-  path.resolve(__dirname, 'node_modules/react-native-elements/node_modules'),
-];
 
-// Add watchFolders to include linked dependencies
+// Add node_modules to watchFolders
 config.watchFolders = [
   path.resolve(__dirname, 'node_modules'),
-  path.resolve(__dirname, 'node_modules/react-native-elements/node_modules'),
+  path.resolve(__dirname, 'src'),
+  path.resolve(__dirname, 'node_modules/react-native/node_modules')
+];
+
+// Add symlinks support
+config.resolver.enableSymlinks = true;
+
+// Add support for module resolution from root
+config.resolver.nodeModulesPaths = [
+  path.resolve(__dirname, 'node_modules'),
+  path.resolve(__dirname, 'node_modules/react-native/node_modules')
 ];
 
 module.exports = config;
