@@ -19,6 +19,7 @@ config.resolver.platforms = ['web', 'ios', 'android'];
 config.resolver.extraNodeModules = {
   'react-native-web': require.resolve('react-native-web'),
   '@react-navigation/native': require.resolve('@react-navigation/native'),
+  '@react-navigation/core': require.resolve('@react-navigation/core'),
   '@react-navigation/bottom-tabs': require.resolve('@react-navigation/bottom-tabs'),
   '@react-navigation/stack': require.resolve('@react-navigation/stack'),
   'react-native-safe-area-context': require.resolve('react-native-safe-area-context'),
@@ -33,5 +34,12 @@ config.resolver.extraNodeModules = {
 
 // Configure asset handling for vector icons
 config.resolver.assetExts = [...config.resolver.assetExts, 'ttf'];
+
+// Ensure proper module resolution
+config.resolver.disableHierarchicalLookup = false;
+config.resolver.nodeModulesPaths = [
+  ...config.resolver.nodeModulesPaths || [],
+  require('path').resolve(__dirname, 'node_modules'),
+];
 
 module.exports = config;
