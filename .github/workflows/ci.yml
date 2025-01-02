@@ -17,23 +17,67 @@ jobs:
       PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    strategy:
+      matrix:
+        node-version: [18.x]
 
-      - name: Setup Node.js
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: |
+          npm install --legacy-peer-deps
+          npm dedupe
+        env:
+          CI: true
 
       - name: Run tests and type check
         run: npm test
+        env:
+          CI: true
 
       - name: Build app
         run: npx expo export
         env:
+          CI: true
           NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+
+      - name: Post Setup Node.js
+        run: |
+          npm cache verify
+          npm doctor || true
+        if: always()
+
+      - name: Complete job
+        if: always()
+        run: |
+          echo "Build Status: ${{ job.status }}"
+          if [ "${{ job.status }}" != "success" ]; then
+            echo "Build failed. Check logs for details."
+            exit 1
+          fi
