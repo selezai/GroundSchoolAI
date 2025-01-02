@@ -1,4 +1,5 @@
 const { getDefaultConfig } = require('@expo/metro-config');
+const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
@@ -30,6 +31,7 @@ config.resolver.extraNodeModules = {
   '@rneui/base': require.resolve('@rneui/base'),
   'react-native-elements': require.resolve('react-native-elements'),
   'react-native-vector-icons': require.resolve('react-native-vector-icons'),
+  'react-native-ratings': require.resolve('react-native-ratings'),
 };
 
 // Configure asset handling for vector icons
@@ -38,8 +40,14 @@ config.resolver.assetExts = [...config.resolver.assetExts, 'ttf'];
 // Ensure proper module resolution
 config.resolver.disableHierarchicalLookup = false;
 config.resolver.nodeModulesPaths = [
-  ...config.resolver.nodeModulesPaths || [],
-  require('path').resolve(__dirname, 'node_modules'),
+  path.resolve(__dirname, 'node_modules'),
+  path.resolve(__dirname, 'node_modules/react-native-elements/node_modules'),
+];
+
+// Add watchFolders to include linked dependencies
+config.watchFolders = [
+  path.resolve(__dirname, 'node_modules'),
+  path.resolve(__dirname, 'node_modules/react-native-elements/node_modules'),
 ];
 
 module.exports = config;
