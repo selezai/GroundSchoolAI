@@ -1,63 +1,30 @@
-const { getDefaultConfig } = require('@expo/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// Add support for PDF and platform-specific files
-config.resolver.sourceExts = process.env.RN_SRC_EXT
-  ? [...process.env.RN_SRC_EXT.split(','), ...config.resolver.sourceExts]
-  : ['web.tsx', 'web.ts', 'web.js', 'tsx', 'ts', 'js'];
-
-config.resolver.assetExts = [...config.resolver.assetExts, 'pdf'];
-
-// Handle platform-specific modules
-config.resolver.resolverMainFields = ['browser', 'react-native', 'main'];
-
-// Ensure proper handling of platform-specific files
-config.resolver.platforms = ['web', 'ios', 'android'];
-
-// Add aliases for web-specific modules
-config.resolver.extraNodeModules = {
-  'react-native-web': require.resolve('react-native-web'),
-  '@react-navigation/native': require.resolve('@react-navigation/native'),
-  '@react-navigation/core': require.resolve('@react-navigation/core'),
-  '@react-navigation/bottom-tabs': require.resolve('@react-navigation/bottom-tabs'),
-  '@react-navigation/stack': require.resolve('@react-navigation/stack'),
-  'react-native-safe-area-context': require.resolve('react-native-safe-area-context'),
-  'react-native-screens': require.resolve('react-native-screens'),
-  '@react-native-masked-view/masked-view': require.resolve('@react-native-masked-view/masked-view'),
-  'react-native-gesture-handler': require.resolve('react-native-gesture-handler'),
-  '@rneui/themed': require.resolve('@rneui/themed'),
-  '@rneui/base': require.resolve('@rneui/base'),
-  'react-native-elements': require.resolve('react-native-elements'),
-  'react-native-vector-icons': require.resolve('react-native-vector-icons'),
-  'react-native-ratings': require.resolve('react-native-ratings'),
-  'react-native-reanimated': require.resolve('react-native-reanimated'),
-  'react-native-webview': require.resolve('react-native-webview'),
-  '@react-native-async-storage/async-storage': require.resolve('@react-native-async-storage/async-storage'),
-  'invariant': require.resolve('invariant')
+// Configure resolver
+config.resolver = {
+  ...config.resolver,
+  extraNodeModules: {
+    'memoize-one': path.resolve(__dirname, 'node_modules/memoize-one'),
+  },
+  resolverMainFields: ['react-native', 'browser', 'main'],
+  platforms: ['ios', 'android', 'web'],
 };
 
-// Configure asset handling for vector icons
-config.resolver.assetExts = [...config.resolver.assetExts, 'ttf'];
-
-// Ensure proper module resolution
-config.resolver.disableHierarchicalLookup = false;
-
-// Add node_modules to watchFolders
+// Configure watchFolders
 config.watchFolders = [
   path.resolve(__dirname, 'node_modules'),
-  path.resolve(__dirname, 'src'),
-  path.resolve(__dirname, 'node_modules/react-native/node_modules')
 ];
 
-// Add symlinks support
-config.resolver.enableSymlinks = true;
+// Configure transformer
+config.transformer = {
+  ...config.transformer,
+  babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
+};
 
-// Add support for module resolution from root
-config.resolver.nodeModulesPaths = [
-  path.resolve(__dirname, 'node_modules'),
-  path.resolve(__dirname, 'node_modules/react-native/node_modules')
-];
+// Configure cacheVersion to force cache invalidation
+config.cacheVersion = '1.0';
 
 module.exports = config;

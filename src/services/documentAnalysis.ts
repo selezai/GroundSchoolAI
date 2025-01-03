@@ -5,7 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { ANTHROPIC_API_KEY, CLAUDE_MODEL } from '@env';
 import { config } from '../config/env';
 
-const anthropic = new Anthropic({
+const anthropicClient = new Anthropic({
   apiKey: ANTHROPIC_API_KEY,
 });
 
@@ -57,7 +57,7 @@ export class DocumentAnalysisService {
       const content = await fileData.text();
 
       // Analyze the content using Claude
-      const message = await anthropic.messages.create({
+      const message = await anthropicClient.messages.create({
         model: CLAUDE_MODEL,
         max_tokens: 1024,
         temperature: 0,

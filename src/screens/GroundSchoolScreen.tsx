@@ -8,7 +8,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config/env';
 import { ANTHROPIC_API_KEY, CLAUDE_MODEL } from '@env';
 
-const anthropic = new Anthropic({
+const anthropicClient = new Anthropic({
   apiKey: ANTHROPIC_API_KEY,
 });
 
@@ -16,6 +16,11 @@ interface SimplifiedContent {
   topic: string;
   explanation: string;
   keyPoints: string[];
+}
+
+interface MessageBlock {
+  type: string;
+  text?: string;
 }
 
 const GroundSchoolScreen = () => {
@@ -55,7 +60,7 @@ const GroundSchoolScreen = () => {
       const content = await fileData.text();
 
       // Use Claude to simplify the content
-      const message = await anthropic.messages.create({
+      const message = await anthropicClient.messages.create({
         model: CLAUDE_MODEL,
         max_tokens: 1500,
         temperature: 0.3,
@@ -78,7 +83,7 @@ Format your response as a JSON object with this structure:
       });
 
       // Extract the content from the first text block
-      const textBlock = message.content.find(block => 
+      const textBlock = message.content.find((block: MessageBlock) => 
         block.type === 'text'
       );
 

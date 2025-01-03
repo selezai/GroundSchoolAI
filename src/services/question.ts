@@ -2,9 +2,10 @@ import { supabase } from './supabase';
 import { config } from '../config/env';
 import { PostgrestError } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
+import { ANTHROPIC_API_KEY } from '@env';
 
-const anthropic = new Anthropic({
-  apiKey: config.anthropic.apiKey,
+const anthropicClient = new Anthropic({
+  apiKey: ANTHROPIC_API_KEY,
 });
 
 export interface Question {
@@ -58,7 +59,7 @@ class QuestionService {
       const content = await fileData.text();
 
       // Generate questions using Claude
-      const message = await anthropic.messages.create({
+      const message = await anthropicClient.messages.create({
         model: 'claude-3-opus-20240229',
         max_tokens: 2000,
         temperature: 0.3,
