@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { config } from '../config/env';
 import { PostgrestError } from '@supabase/supabase-js';
-import Anthropic from '@anthropic-ai/sdk';
+import { Anthropic } from '@anthropic-ai/sdk';
 import { ANTHROPIC_API_KEY } from '@env';
 
 const anthropicClient = new Anthropic({

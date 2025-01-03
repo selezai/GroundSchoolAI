@@ -6,6 +6,7 @@ declare module '@env' {
   export const PAYSTACK_PUBLIC_KEY: string;
   export const GOOGLE_APP_PASSWORD: string;
   export const CLAUDE_MODEL: string;
+  export const SUPABASE_SERVICE_ROLE_KEY: string;
 }
 
 // Extend the NodeJS namespace to include environment variables
@@ -19,6 +20,7 @@ declare global {
       PAYSTACK_PUBLIC_KEY: string;
       GOOGLE_APP_PASSWORD: string;
       CLAUDE_MODEL: string;
+      SUPABASE_SERVICE_ROLE_KEY: string;
     }
   }
 }

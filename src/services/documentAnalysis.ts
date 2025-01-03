@@ -1,7 +1,7 @@
 import { Document } from '../types/document';
 import { Block } from '../types/block';
 import { supabase } from './supabase';
-import Anthropic from '@anthropic-ai/sdk';
+import { Anthropic } from '@anthropic-ai/sdk';
 import { ANTHROPIC_API_KEY, CLAUDE_MODEL } from '@env';
 import { config } from '../config/env';
 
