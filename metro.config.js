@@ -11,6 +11,8 @@ config.resolver = {
   },
   resolverMainFields: ['react-native', 'browser', 'main'],
   platforms: ['ios', 'android', 'web'],
+  assetExts: [...config.resolver.assetExts, 'web.js', 'web.jsx', 'web.ts', 'web.tsx'],
+  sourceExts: [...config.resolver.sourceExts, 'web.js', 'web.jsx', 'web.ts', 'web.tsx'],
 };
 
 // Configure watchFolders
@@ -22,6 +24,7 @@ config.watchFolders = [
 config.transformer = {
   ...config.transformer,
   babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
+  assetPlugins: ['expo-asset/tools/hashAssetFiles'],
 };
 
 // Configure cacheVersion to force cache invalidation
