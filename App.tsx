@@ -3,9 +3,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ThemeProvider } from '@rneui/themed';
-import { Icon } from 'react-native-elements';
+import { Icon } from '@rneui/themed';
 import { theme } from './src/config/theme';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 
 // Screens
 import HomeScreen from './src/screens/HomeScreen';
@@ -48,7 +50,6 @@ const TabNavigator = () => {
           return (
             <Icon
               name={iconName}
-              type="material"
               size={size}
               color={color}
             />
@@ -65,42 +66,74 @@ const TabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Study Materials" component={StudyMaterialsScreen} />
-      <Tab.Screen name="Question Bank" component={QuestionBankScreen} />
-      <Tab.Screen name="Instructor AI" component={InstructorAIScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen}
+        options={{
+          title: 'Home',
+        }}
+      />
+      <Tab.Screen 
+        name="Study Materials" 
+        component={StudyMaterialsScreen}
+        options={{
+          title: 'Study',
+        }}
+      />
+      <Tab.Screen 
+        name="Question Bank" 
+        component={QuestionBankScreen}
+        options={{
+          title: 'Questions',
+        }}
+      />
+      <Tab.Screen 
+        name="Instructor AI" 
+        component={InstructorAIScreen}
+        options={{
+          title: 'AI Tutor',
+        }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{
+          title: 'Profile',
+        }}
+      />
     </Tab.Navigator>
   );
 };
 
 const App = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <AuthProvider>
-        <NavigationContainer>
-          <Stack.Navigator
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="MainTabs" component={TabNavigator} />
-            <Stack.Screen
-              name="Subscription"
-              component={SubscriptionScreen}
-              options={{
-                headerShown: true,
-                headerTitle: 'Subscription Plans',
-                headerStyle: {
-                  backgroundColor: theme.colors.primary,
-                },
-                headerTintColor: theme.colors.surface,
+    <SafeAreaProvider>
+      <ThemeProvider theme={theme}>
+        <AuthProvider>
+          <NavigationContainer>
+            <Stack.Navigator
+              screenOptions={{
+                headerShown: false,
               }}
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </AuthProvider>
-    </ThemeProvider>
+            >
+              <Stack.Screen name="MainTabs" component={TabNavigator} />
+              <Stack.Screen
+                name="Subscription"
+                component={SubscriptionScreen}
+                options={{
+                  headerShown: true,
+                  headerTitle: 'Subscription Plans',
+                  headerStyle: {
+                    backgroundColor: theme.colors.primary,
+                  },
+                  headerTintColor: theme.colors.surface,
+                }}
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 };
 

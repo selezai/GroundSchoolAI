@@ -6,38 +6,29 @@ export default {
     slug: 'groundschoolai',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/icon.png',
     userInterfaceStyle: 'light',
-    splash: {
-      image: './assets/splash.png',
-      resizeMode: 'contain',
-      backgroundColor: '#ffffff'
-    },
     assetBundlePatterns: [
       '**/*'
     ],
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
+      bundleIdentifier: 'com.groundschoolai.app'
     },
     android: {
-      adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#ffffff'
-      }
-    },
-    web: {
-      favicon: './assets/favicon.png'
+      package: 'com.groundschoolai.app'
     },
     extra: {
-      MONGODB_URI: process.env.MONGODB_URI,
-      RENDER_API_KEY: process.env.RENDER_API_KEY,
-      GOOGLE_APP_PASSWORD: process.env.GOOGLE_APP_PASSWORD,
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SUPABASE_PUBLIC_KEY: process.env.SUPABASE_PUBLIC_KEY,
-      SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
-      CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
-      PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY,
-      PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      googleAppPassword: process.env.GOOGLE_APP_PASSWORD,
+      paystackSecretKey: process.env.PAYSTACK_SECRET_KEY,
+      paystackPublicKey: process.env.PAYSTACK_PUBLIC_KEY,
+      claudeModel: process.env.CLAUDE_MODEL,
+      supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      eas: {
+        projectId: 'your-project-id'
+      }
     }
   }
 };
