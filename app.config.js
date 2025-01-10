@@ -4,19 +4,13 @@ export default {
   expo: {
     name: 'GroundSchoolAI',
     slug: 'groundschoolai',
+    owner: 'selezai',
     version: '1.0.0',
     orientation: 'portrait',
     userInterfaceStyle: 'light',
     assetBundlePatterns: [
       '**/*'
     ],
-    ios: {
-      supportsTablet: true,
-      bundleIdentifier: 'com.groundschoolai.app'
-    },
-    android: {
-      package: 'com.groundschoolai.app'
-    },
     extra: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
@@ -27,8 +21,13 @@ export default {
       claudeModel: process.env.CLAUDE_MODEL,
       supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
       eas: {
-        projectId: 'your-project-id'
+        projectId: "706ad34d-f8a8-4a9b-8f65-a7c33c349294"
       }
+    },
+    sdkVersion: "49.0.0",
+    platforms: ["ios", "android"],
+    runtimeVersion: {
+      policy: "appVersion"
     }
   }
 };

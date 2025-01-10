@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "GroundSchoolAI",
-    "slug": "GroundSchoolAI",
+    "slug": "groundschoolai",
+    "owner": "selezai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,17 +17,23 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.groundschoolai.app"
+      "bundleIdentifier": "com.selezai.groundschoolai"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.groundschoolai.app"
+      "package": "com.selezai.groundschoolai"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-dev-client"
+    ],
+    "developmentClient": {
+      "silentLaunch": true
     }
   }
 }
